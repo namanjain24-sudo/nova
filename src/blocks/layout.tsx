@@ -1,4 +1,12 @@
-import { Box, Columns3, LayoutTemplate, Minus, Square } from 'lucide-react'
+import {
+  Box,
+  Columns3,
+  CreditCard,
+  LayoutTemplate,
+  Minus,
+  SeparatorHorizontal,
+  Square,
+} from 'lucide-react'
 import { makeNode, registerBlock } from '../core/schema'
 
 registerBlock({
@@ -95,6 +103,61 @@ function columnCellStyle() {
     padding: '4px',
   }
 }
+
+registerBlock({
+  type: 'card',
+  name: 'Card',
+  category: 'layout',
+  icon: CreditCard,
+  keywords: ['panel', 'box', 'tile', 'surface'],
+  isContainer: true,
+  inspector: ['layout', 'spacing', 'size', 'background', 'border', 'effects'],
+  create: () =>
+    makeNode(
+      'card',
+      {},
+      {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        padding: '28px',
+        backgroundColor: '#ffffff',
+        borderRadius: '18px',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: '#e2e8f0',
+        boxShadow: '0 18px 40px -24px rgba(15,23,42,0.25)',
+      },
+      [],
+    ),
+  render: ({ style, children }) => <div style={style}>{children}</div>,
+})
+
+registerBlock({
+  type: 'divider',
+  name: 'Divider',
+  category: 'layout',
+  icon: SeparatorHorizontal,
+  keywords: ['hr', 'rule', 'line', 'separator'],
+  inspector: ['spacing', 'size'],
+  fields: [{ key: 'color', label: 'Color', type: 'color' }],
+  create: () =>
+    makeNode(
+      'divider',
+      { color: '#e2e8f0' },
+      { width: '100%', height: '1px', border: 'none' },
+    ),
+  render: ({ node, style }) => (
+    <hr
+      style={{
+        ...style,
+        backgroundColor: node.props.color ?? '#e2e8f0',
+        border: 'none',
+        margin: 0,
+      }}
+    />
+  ),
+})
 
 registerBlock({
   type: 'spacer',

@@ -6,6 +6,7 @@ import {
   findParent,
   insertNode as insert,
   moveNode as move,
+  pathTo,
   removeNode,
   updateNode,
 } from '../lib/tree'
@@ -75,11 +76,26 @@ export const useEditor = create<EditorState>()(
         const def = getBlock(type)
         if (!def) return
         const node = def.create()
-        const targetParent = resolveDropParent(get(), parentId)
-        set((s) => ({
-          doc: insert(s.doc, targetParent, node, index),
-          selectedId: node.id,
-        }))
+        // Explicit target (from drag-drop) is always respected.
+        if (parentId) {
+          set((s) => ({ doc: insert(s.doc, parentId, node, index), selectedId: node.id }))
+          return
+        }
+        // Click-to-add: full-width sections are always page-level bands,
+        // inserted after the currently selected section (never nested).
+        if (def.category === 'section') {
+          const s = get()
+          const anchor = topLevelAncestor(s.doc, s.selectedId)
+          const at =
+            anchor != null
+              ? (s.doc.children?.findIndex((c) => c.id === anchor) ?? -1) + 1
+              : undefined
+          set((st) => ({ doc: insert(st.doc, st.doc.id, node, at), selectedId: node.id }))
+          return
+        }
+        // Other blocks drop into the selected container (or its parent).
+        const targetParent = resolveDropParent(get(), undefined)
+        set((s) => ({ doc: insert(s.doc, targetParent, node, index), selectedId: node.id }))
       },
 
       insertNode: (node, parentId, index) =>
@@ -160,6 +176,22 @@ function resolveDropParent(state: EditorState, parentId?: string): string {
     if (parent) return parent.id
   }
   return state.doc.id
+}
+
+/** The direct child of the page root that contains `id` (or null). */
+function topLevelAncestor(root: Node, id: string | null): string | null {
+  if (!id || id === root.id) return null
+  const path = pathTo(root, id)
+  // path is [root, ...ancestors]; the top-level band is index 1's node.
+  if (path && path.length >= 1) {
+    // pathTo returns ancestor ids from root down to (excluding) the node.
+    const rootIdx = path.indexOf(root.id)
+    const topId = path[rootIdx + 1]
+    if (topId) return topId
+  }
+  // selection itself may be a direct child of root
+  if (root.children?.some((c) => c.id === id)) return id
+  return null
 }
 
 function findDef(root: Node, id: string) {

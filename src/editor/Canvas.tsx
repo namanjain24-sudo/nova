@@ -1,7 +1,9 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Renderer } from '../core/Renderer'
 import { useEditor } from '../store/editor'
+import { useDrag } from '../dnd/dragStore'
 import { SelectionOverlay } from './SelectionOverlay'
+import { DropIndicator } from './DropIndicator'
 
 const DEVICE_WIDTH: Record<string, string> = {
   desktop: '100%',
@@ -22,6 +24,12 @@ export function Canvas() {
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const pageRef = useRef<HTMLDivElement>(null)
+  const setPageEl = useDrag((s) => s.setPageEl)
+
+  useEffect(() => {
+    setPageEl(pageRef.current)
+    return () => setPageEl(null)
+  }, [setPageEl])
 
   const isEmpty = !doc.children || doc.children.length === 0
 
@@ -56,7 +64,10 @@ export function Canvas() {
             )}
 
             {!previewMode && (
-              <SelectionOverlay containerRef={pageRef} scrollRef={scrollRef} />
+              <>
+                <SelectionOverlay containerRef={pageRef} scrollRef={scrollRef} />
+                <DropIndicator />
+              </>
             )}
           </div>
         </div>

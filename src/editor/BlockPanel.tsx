@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
+import { useDraggable } from '@dnd-kit/core'
 import { allBlocks, type BlockDefinition } from '../core/schema'
 import { useEditor } from '../store/editor'
 import { cn } from '../lib/cn'
@@ -46,13 +47,8 @@ export function BlockPanel() {
   }, [query])
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-ink-800 bg-ink-900">
-      <div className="flex items-center gap-2 px-4 pt-4 pb-3">
-        <span className="text-[13px] font-semibold tracking-wide text-ink-200">
-          Add blocks
-        </span>
-      </div>
-      <div className="px-3 pb-3">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="px-3 pt-3 pb-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-400" />
           <input
@@ -72,17 +68,7 @@ export function BlockPanel() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               {blocks.map((b) => (
-                <button
-                  key={b.type}
-                  onClick={() => addBlock(b.type)}
-                  className={cn(
-                    'nova-focus group flex flex-col items-center gap-2 rounded-xl border border-ink-700/70 bg-ink-850 px-2 py-3.5',
-                    'text-ink-300 transition hover:-translate-y-0.5 hover:border-brand-500/60 hover:bg-ink-800 hover:text-ink-100 hover:shadow-lg hover:shadow-brand-500/10',
-                  )}
-                >
-                  <b.icon className="size-4.5 transition group-hover:text-brand-400" />
-                  <span className="text-[11px] font-medium">{b.name}</span>
-                </button>
+                <PaletteItem key={b.type} block={b} onAdd={() => addBlock(b.type)} />
               ))}
             </div>
           </div>
@@ -93,6 +79,30 @@ export function BlockPanel() {
           </div>
         )}
       </div>
-    </aside>
+    </div>
+  )
+}
+
+function PaletteItem({ block, onAdd }: { block: BlockDefinition; onAdd: () => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `palette:${block.type}`,
+    data: { kind: 'new', type: block.type },
+  })
+  return (
+    <button
+      ref={setNodeRef}
+      onClick={onAdd}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        'nova-focus group flex cursor-grab flex-col items-center gap-2 rounded-xl border border-ink-700/70 bg-ink-850 px-2 py-3.5 active:cursor-grabbing',
+        'text-ink-300 transition hover:-translate-y-0.5 hover:border-brand-500/60 hover:bg-ink-800 hover:text-ink-100 hover:shadow-lg hover:shadow-brand-500/10',
+        isDragging && 'opacity-40',
+      )}
+      title={`Click to add, or drag ${block.name} onto the canvas`}
+    >
+      <block.icon className="size-4.5 transition group-hover:text-brand-400" />
+      <span className="text-[11px] font-medium">{block.name}</span>
+    </button>
   )
 }

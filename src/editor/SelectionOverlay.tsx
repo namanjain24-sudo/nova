@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Copy, Trash2 } from 'lucide-react'
+import { Copy, GripVertical, Trash2 } from 'lucide-react'
+import { useDraggable } from '@dnd-kit/core'
 import { getBlock } from '../core/schema'
 import { findNode } from '../lib/tree'
 import { useEditor } from '../store/editor'
@@ -113,6 +114,7 @@ export function SelectionOverlay({
             className="pointer-events-auto absolute right-0 flex items-center gap-0.5 rounded-lg border border-ink-700 bg-ink-900/95 px-1 py-1 shadow-xl backdrop-blur"
             style={{ top: sel.top < 40 ? sel.height + 8 : -34 }}
           >
+            {!isRoot && selectedId && <MoveHandle id={selectedId} />}
             <span className="px-1.5 text-[11px] font-semibold text-brand-400">
               {selName}
             </span>
@@ -138,5 +140,26 @@ export function SelectionOverlay({
         </div>
       )}
     </div>
+  )
+}
+
+function MoveHandle({ id }: { id: string }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `move:${id}`,
+    data: { kind: 'move', id },
+  })
+  return (
+    <button
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      title="Drag to move"
+      className={
+        'nova-focus cursor-grab rounded-md p-1 text-ink-300 hover:bg-ink-700 hover:text-white active:cursor-grabbing ' +
+        (isDragging ? 'text-brand-400' : '')
+      }
+    >
+      <GripVertical className="size-3.5" />
+    </button>
   )
 }

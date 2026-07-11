@@ -35,7 +35,11 @@ export function NodeView({ node, device, editMode }: NodeViewProps) {
   const def = getBlock(node.type)
   if (!def) return null
 
-  const style = resolveStyle(node, device)
+  // Hidden nodes are dropped entirely from export/preview, dimmed in the editor.
+  const hidden = !!node.props?._hidden
+  if (hidden && !editMode) return null
+
+  const style = hidden ? { ...resolveStyle(node, device), opacity: 0.4 } : resolveStyle(node, device)
 
   let children: ReactNode = node.children?.map((c) => (
     <NodeView key={c.id} node={c} device={device} editMode={editMode} />

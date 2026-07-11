@@ -2,3 +2,5 @@
 import './layout'
 import './content'
 import './media'
+import './form'
+import './sections'

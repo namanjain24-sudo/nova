@@ -1,0 +1,120 @@
+import { Box, Columns3, LayoutTemplate, Minus, Square } from 'lucide-react'
+import { makeNode, registerBlock } from '../core/schema'
+
+registerBlock({
+  type: 'page',
+  name: 'Page',
+  category: 'layout',
+  icon: LayoutTemplate,
+  isContainer: true,
+  create: () => makeNode('page', { name: 'Page' }, { minHeight: '100%', backgroundColor: '#ffffff' }, []),
+  render: ({ style, children }) => <div style={style}>{children}</div>,
+})
+
+registerBlock({
+  type: 'section',
+  name: 'Section',
+  category: 'layout',
+  icon: Square,
+  keywords: ['band', 'block', 'row'],
+  isContainer: true,
+  inspector: ['spacing', 'size', 'background', 'border', 'effects', 'layout'],
+  create: () =>
+    makeNode(
+      'section',
+      {},
+      {
+        width: '100%',
+        paddingTop: '80px',
+        paddingBottom: '80px',
+        paddingLeft: '24px',
+        paddingRight: '24px',
+        backgroundColor: 'transparent',
+      },
+      [makeNode('container', {}, defaultContainerStyle(), [])],
+    ),
+  render: ({ style, children }) => <section style={style}>{children}</section>,
+})
+
+function defaultContainerStyle() {
+  return {
+    width: '100%',
+    maxWidth: '1152px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '20px',
+  }
+}
+
+registerBlock({
+  type: 'container',
+  name: 'Container',
+  category: 'layout',
+  icon: Box,
+  keywords: ['wrapper', 'div', 'group', 'flex'],
+  isContainer: true,
+  inspector: ['layout', 'spacing', 'size', 'background', 'border', 'effects'],
+  create: () => makeNode('container', {}, defaultContainerStyle(), []),
+  render: ({ style, children }) => <div style={style}>{children}</div>,
+})
+
+registerBlock({
+  type: 'columns',
+  name: 'Columns',
+  category: 'layout',
+  icon: Columns3,
+  keywords: ['grid', 'row', 'split'],
+  isContainer: true,
+  inspector: ['layout', 'spacing', 'size', 'background', 'border', 'effects'],
+  create: () =>
+    makeNode(
+      'columns',
+      { columns: 3 },
+      {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: '24px',
+        width: '100%',
+      },
+      [
+        makeNode('container', {}, columnCellStyle(), []),
+        makeNode('container', {}, columnCellStyle(), []),
+        makeNode('container', {}, columnCellStyle(), []),
+      ],
+    ),
+  render: ({ style, children }) => <div style={style}>{children}</div>,
+})
+
+function columnCellStyle() {
+  return {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+    padding: '4px',
+  }
+}
+
+registerBlock({
+  type: 'spacer',
+  name: 'Spacer',
+  category: 'layout',
+  icon: Minus,
+  keywords: ['gap', 'space', 'divider'],
+  inspector: ['size'],
+  fields: [{ key: 'height', label: 'Height (px)', type: 'number', placeholder: '48' }],
+  create: () => makeNode('spacer', { height: 48 }, {}),
+  render: ({ node, style, editMode }) => (
+    <div
+      style={{
+        height: `${node.props.height ?? 48}px`,
+        width: '100%',
+        ...style,
+        ...(editMode
+          ? { outline: '1px dashed rgba(139,92,246,0.35)', outlineOffset: '-1px' }
+          : {}),
+      }}
+    />
+  ),
+})

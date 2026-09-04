@@ -1,13 +1,18 @@
-import type { CSSProperties } from 'react'
+import { Fragment, useState, type CSSProperties } from 'react'
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  ChevronRight,
+  Component,
+  ImagePlus,
   MousePointer2,
 } from 'lucide-react'
-import { getBlock, resolveStyle, type FieldDef } from '../core/schema'
-import { findNode } from '../lib/tree'
+import { getBlock, resolveStyle, type FieldDef, type Node } from '../core/schema'
+import { findNode, pathTo } from '../lib/tree'
+import { cn } from '../lib/cn'
 import { useEditor } from '../store/editor'
+import { ImagePicker } from './ImagePicker'
 import {
   ColorInput,
   NumberInput,
@@ -62,7 +67,55 @@ export function Inspector() {
         )}
       </div>
 
+      <Breadcrumb doc={doc} nodeId={node.id} />
+
+      {node.id !== doc.id && (
+        <div className="border-b border-ink-800 px-4 py-2.5">
+          {def.type === 'instance' ? (
+            <button
+              onClick={() => useEditor.getState().enterComponent(node.props.componentId)}
+              className="nova-focus flex w-full items-center justify-center gap-2 rounded-lg border border-brand-500/50 bg-brand-500/10 px-3 py-2 text-[12.5px] font-semibold text-brand-300 transition hover:bg-brand-500/20"
+            >
+              <Component className="size-3.5" />
+              Edit component
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                const name = window.prompt('Name this component (reuse it on any page):', def.name)
+                if (name?.trim()) useEditor.getState().saveAsComponent(node.id, name.trim())
+              }}
+              className="nova-focus flex w-full items-center justify-center gap-2 rounded-lg border border-ink-700 px-3 py-2 text-[12.5px] font-medium text-ink-200 transition hover:border-brand-500/60 hover:bg-ink-800 hover:text-white"
+            >
+              <Component className="size-3.5 text-brand-400" />
+              Save as component
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="nova-scroll flex-1 overflow-y-auto">
+        {node.type === 'collectionList' && (
+          <Section title="Collection">
+            <Row label="Source">
+              <Select
+                value={(node.props.collectionId as string) || ''}
+                onChange={(v) => updateProps(node.id, { collectionId: v })}
+                options={[
+                  { label: '— pick a collection —', value: '' },
+                  ...useEditor.getState().collections.map((c) => ({ label: c.name, value: c.id })),
+                ]}
+              />
+            </Row>
+            <button
+              onClick={() => useEditor.getState().setCmsOpen(true)}
+              className="nova-focus mx-3 mb-1 flex items-center justify-center gap-1.5 rounded-lg border border-ink-700 px-3 py-1.5 text-[12px] font-medium text-ink-200 transition hover:border-brand-500/60 hover:bg-ink-800 hover:text-white"
+            >
+              Manage content in CMS
+            </button>
+          </Section>
+        )}
+
         {/* content fields */}
         {def.fields && def.fields.length > 0 && (
           <Section title="Content">
@@ -84,6 +137,20 @@ export function Inspector() {
                 value={(s.display as string) ?? 'block'}
                 onChange={(v) => set({ display: v })}
                 options={opt('block', 'flex', 'grid', 'inline-flex', 'none')}
+              />
+            </Row>
+            <Row label="Sticky">
+              <SegmentedControl
+                value={s.position === 'sticky' ? 'sticky' : 'off'}
+                onChange={(v) =>
+                  v === 'sticky'
+                    ? set({ position: 'sticky', top: 0 as any, zIndex: 50 as any })
+                    : set({ position: undefined, top: undefined, zIndex: undefined })
+                }
+                options={[
+                  { value: 'off', label: 'Off' },
+                  { value: 'sticky', label: 'Sticks to top' },
+                ]}
               />
             </Row>
             {(s.display === 'flex' || s.display === 'inline-flex') && (
@@ -181,12 +248,7 @@ export function Inspector() {
 
         {groups.includes('background') && (
           <Section title="Background">
-            <Row label="Color">
-              <ColorInput
-                value={s.backgroundColor as string}
-                onChange={(v) => set({ backgroundColor: v })}
-              />
-            </Row>
+            <BackgroundControl s={s} set={set} />
           </Section>
         )}
 
@@ -267,6 +329,58 @@ export function Inspector() {
             </Row>
           </Section>
         )}
+
+        {node.id !== doc.id && (
+          <Section title="Interactions">
+            <Row label="Animate in">
+              <Select
+                value={(node.props._anim as string) ?? 'none'}
+                onChange={(v) => updateProps(node.id, { _anim: v === 'none' ? undefined : v })}
+                options={[
+                  { label: 'None', value: 'none' },
+                  { label: 'Fade', value: 'fade' },
+                  { label: 'Fade up', value: 'fade-up' },
+                  { label: 'Fade down', value: 'fade-down' },
+                  { label: 'Zoom in', value: 'zoom' },
+                  { label: 'Slide left', value: 'slide-left' },
+                  { label: 'Slide right', value: 'slide-right' },
+                  { label: 'Blur up', value: 'blur-up' },
+                  { label: 'Rotate in', value: 'rotate' },
+                  { label: 'Flip up', value: 'flip-up' },
+                ]}
+              />
+            </Row>
+            {node.props._anim && (
+              <Row label="Delay">
+                <NumberInput
+                  suffix="ms"
+                  value={node.props._animDelay != null ? String(node.props._animDelay) : ''}
+                  onChange={(v) =>
+                    updateProps(node.id, { _animDelay: v === '' ? undefined : Number(v) })
+                  }
+                  placeholder="0"
+                />
+              </Row>
+            )}
+            <Row label="On hover">
+              <Select
+                value={(node.props._hover as string) ?? 'none'}
+                onChange={(v) => updateProps(node.id, { _hover: v === 'none' ? undefined : v })}
+                options={[
+                  { label: 'None', value: 'none' },
+                  { label: 'Lift', value: 'lift' },
+                  { label: 'Grow', value: 'grow' },
+                  { label: 'Glow', value: 'glow' },
+                  { label: 'Dim', value: 'dim' },
+                  { label: 'Brighten', value: 'brighten' },
+                ]}
+              />
+            </Row>
+            <p className="mt-1 text-[10px] leading-relaxed text-ink-500">
+              Preview or export to see animations play.
+            </p>
+          </Section>
+        )}
       </div>
     </aside>
   )
@@ -305,16 +419,184 @@ function ContentField({
         />
       </Row>
     )
+  if (field.type === 'boolean')
+    return (
+      <Row label={field.label}>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={!!value}
+          onClick={() => onChange(!value)}
+          className={cn(
+            'relative h-5 w-9 shrink-0 rounded-full transition',
+            value ? 'bg-brand-600' : 'bg-ink-700',
+          )}
+        >
+          <span
+            className={cn(
+              'absolute top-0.5 size-4 rounded-full bg-white transition-all',
+              value ? 'left-[18px]' : 'left-0.5',
+            )}
+          />
+        </button>
+      </Row>
+    )
   if (field.type === 'color')
     return (
       <Row label={field.label}>
         <ColorInput value={value} onChange={onChange} />
       </Row>
     )
+  if (field.type === 'image')
+    return <ImageField label={field.label} value={value} onChange={onChange} placeholder={field.placeholder} />
   return (
     <Row label={field.label}>
       <TextInput value={value ?? ''} onChange={onChange} placeholder={field.placeholder} />
     </Row>
+  )
+}
+
+/** Ancestor path of the selected node — click any crumb to select that parent. */
+function Breadcrumb({ doc, nodeId }: { doc: Node; nodeId: string }) {
+  const ids = [...(pathTo(doc, nodeId) ?? []), nodeId]
+  if (ids.length <= 1) return null
+  return (
+    <div className="nova-scroll flex items-center gap-0.5 overflow-x-auto border-b border-ink-800 px-3 py-1.5">
+      {ids.map((id, i) => {
+        const n = findNode(doc, id)
+        const label = id === doc.id ? 'Page' : (n ? getBlock(n.type)?.name ?? n.type : '?')
+        const isLast = i === ids.length - 1
+        return (
+          <Fragment key={id}>
+            {i > 0 && <ChevronRight className="size-3 shrink-0 text-ink-600" />}
+            <button
+              disabled={isLast}
+              onClick={() => useEditor.getState().select(id)}
+              className={cn(
+                'shrink-0 whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] transition',
+                isLast ? 'font-semibold text-brand-300' : 'text-ink-400 hover:bg-ink-800 hover:text-ink-100',
+              )}
+            >
+              {label}
+            </button>
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
+function ImageField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: string | undefined
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const onFile = (file: File | undefined) => {
+    if (!file) return
+    if (file.size > 3_000_000) {
+      alert('Please choose an image under 3 MB (it is embedded directly in your page).')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => onChange(String(reader.result))
+    reader.readAsDataURL(file)
+  }
+  const isData = typeof value === 'string' && value.startsWith('data:')
+  return (
+    <div>
+      <div className="mb-1.5 text-[11px] text-ink-400">{label}</div>
+      <div className="flex items-center gap-2.5">
+        <div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-lg border border-ink-700 bg-ink-850">
+          {value ? (
+            <img src={value} alt="" className="size-full object-cover" />
+          ) : (
+            <span className="text-[9px] text-ink-500">none</span>
+          )}
+        </div>
+        <button
+          onClick={() => setPickerOpen(true)}
+          className="nova-focus flex items-center gap-1.5 rounded-md border border-ink-700 bg-ink-850 px-2.5 py-1.5 text-[11px] font-medium text-ink-200 transition hover:border-brand-500/60 hover:text-white"
+        >
+          <ImagePlus className="size-3.5 text-brand-400" />
+          Browse
+        </button>
+        <label className="nova-focus cursor-pointer rounded-md border border-ink-700 bg-ink-850 px-2.5 py-1.5 text-[11px] font-medium text-ink-200 transition hover:border-brand-500/60 hover:text-white">
+          Upload
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onFile(e.target.files?.[0])}
+          />
+        </label>
+      </div>
+      {pickerOpen && <ImagePicker onPick={onChange} onClose={() => setPickerOpen(false)} />}
+      <input
+        className="nova-focus mt-2 w-full rounded-md border border-ink-700 bg-ink-850 px-2 py-1 text-[12px] text-ink-100 placeholder:text-ink-500"
+        value={isData ? '' : value ?? ''}
+        placeholder={isData ? 'Uploaded image ✓' : placeholder ?? 'https://…'}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  )
+}
+
+function BackgroundControl({ s, set }: { s: CSSProperties; set: (p: CSSProperties) => void }) {
+  const bg = typeof s.background === 'string' ? s.background : ''
+  const isGradient = bg.includes('gradient')
+  const m = /linear-gradient\(\s*(-?\d+)deg\s*,\s*([^,]+?)\s*,\s*([^)]+?)\s*\)/i.exec(bg)
+  const angle = m ? m[1] : '135'
+  const from = m ? m[2].trim() : (s.backgroundColor as string) || '#7c3aed'
+  const to = m ? m[3].trim() : '#4f46e5'
+
+  const setGradient = (next: { angle?: string; from?: string; to?: string }) => {
+    const a = next.angle ?? angle
+    const f = next.from ?? from
+    const t = next.to ?? to
+    set({ background: `linear-gradient(${a}deg, ${f}, ${t})`, backgroundColor: undefined })
+  }
+
+  return (
+    <>
+      <Row label="Type">
+        <SegmentedControl
+          value={isGradient ? 'gradient' : 'solid'}
+          onChange={(v) =>
+            v === 'gradient'
+              ? setGradient({ from: (s.backgroundColor as string) || from })
+              : set({ background: undefined, backgroundColor: from })
+          }
+          options={[
+            { value: 'solid', label: 'Solid' },
+            { value: 'gradient', label: 'Gradient' },
+          ]}
+        />
+      </Row>
+      {isGradient ? (
+        <>
+          <Row label="From">
+            <ColorInput value={from} onChange={(v) => setGradient({ from: v })} />
+          </Row>
+          <Row label="To">
+            <ColorInput value={to} onChange={(v) => setGradient({ to: v })} />
+          </Row>
+          <Row label="Angle">
+            <NumberInput suffix="°" value={angle} onChange={(v) => setGradient({ angle: v || '0' })} placeholder="135" />
+          </Row>
+        </>
+      ) : (
+        <Row label="Color">
+          <ColorInput value={s.backgroundColor as string} onChange={(v) => set({ backgroundColor: v })} />
+        </Row>
+      )}
+    </>
   )
 }
 

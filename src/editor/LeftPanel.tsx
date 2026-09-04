@@ -1,25 +1,29 @@
 import { useState } from 'react'
-import { Blocks, Layers } from 'lucide-react'
+import { Blocks, Layers, Palette } from 'lucide-react'
 import { BlockPanel } from './BlockPanel'
 import { LayersPanel } from './LayersPanel'
+import { ThemePanel } from './ThemePanel'
 import { cn } from '../lib/cn'
 
-type Tab = 'blocks' | 'layers'
+type Tab = 'blocks' | 'layers' | 'theme'
 
 export function LeftPanel() {
   const [tab, setTab] = useState<Tab>('blocks')
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-ink-800 bg-ink-900">
-      <div className="flex items-center gap-1 border-b border-ink-800 px-2 pt-2">
+      <div className="flex items-center gap-0.5 border-b border-ink-800 px-2 pt-2">
         <TabButton active={tab === 'blocks'} onClick={() => setTab('blocks')} icon={Blocks}>
           Blocks
         </TabButton>
         <TabButton active={tab === 'layers'} onClick={() => setTab('layers')} icon={Layers}>
           Layers
         </TabButton>
+        <TabButton active={tab === 'theme'} onClick={() => setTab('theme')} icon={Palette}>
+          Theme
+        </TabButton>
       </div>
-      {tab === 'blocks' ? <BlockPanel /> : <LayersPanel />}
+      {tab === 'blocks' ? <BlockPanel /> : tab === 'layers' ? <LayersPanel /> : <ThemePanel />}
     </aside>
   )
 }

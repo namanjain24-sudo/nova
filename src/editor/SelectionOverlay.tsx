@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Copy, GripVertical, Trash2 } from 'lucide-react'
+import { ChevronUp, ChevronDown, Component, Copy, GripVertical, Trash2 } from 'lucide-react'
 import { useDraggable } from '@dnd-kit/core'
 import { getBlock } from '../core/schema'
-import { findNode } from '../lib/tree'
+import { findNode, findParent } from '../lib/tree'
 import { useEditor } from '../store/editor'
 
 interface Rect {
@@ -44,6 +44,8 @@ export function SelectionOverlay({
   const hoveredId = useEditor((s) => s.hoveredId)
   const deleteNode = useEditor((s) => s.deleteNode)
   const duplicateNode = useEditor((s) => s.duplicateNode)
+  const moveNodeBy = useEditor((s) => s.moveNodeBy)
+  const saveAsComponent = useEditor((s) => s.saveAsComponent)
 
   const [sel, setSel] = useState<Rect | null>(null)
   const [hov, setHov] = useState<Rect | null>(null)
@@ -77,6 +79,10 @@ export function SelectionOverlay({
   const selName = selNode ? getBlock(selNode.type)?.name : ''
   const hovName = hovNode ? getBlock(hovNode.type)?.name : ''
   const isRoot = selectedId === doc.id
+  const selParent = selectedId && !isRoot ? findParent(doc, selectedId) : null
+  const selIndex = selParent?.children?.findIndex((c) => c.id === selectedId) ?? -1
+  const canUp = selIndex > 0
+  const canDown = selParent?.children ? selIndex >= 0 && selIndex < selParent.children.length - 1 : false
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
@@ -118,15 +124,54 @@ export function SelectionOverlay({
             <span className="px-1.5 text-[11px] font-semibold text-brand-400">
               {selName}
             </span>
+            {!isRoot && selNode?.type === 'instance' && (
+              <button
+                title="Edit component — updates every page (or double-click it)"
+                onClick={() => selNode && useEditor.getState().enterComponent(selNode.props.componentId as string)}
+                className="nova-focus flex items-center gap-1 rounded-md bg-brand-600/90 px-1.5 py-1 text-[11px] font-semibold text-white hover:bg-brand-500"
+              >
+                <Component className="size-3.5" />
+                Edit
+              </button>
+            )}
             {!isRoot && (
               <>
                 <button
-                  title="Duplicate"
+                  title="Move up (⌥↑)"
+                  disabled={!canUp}
+                  onClick={() => selectedId && moveNodeBy(selectedId, -1)}
+                  className="nova-focus rounded-md p-1 text-ink-300 enabled:hover:bg-ink-700 enabled:hover:text-white disabled:opacity-30"
+                >
+                  <ChevronUp className="size-3.5" />
+                </button>
+                <button
+                  title="Move down (⌥↓)"
+                  disabled={!canDown}
+                  onClick={() => selectedId && moveNodeBy(selectedId, 1)}
+                  className="nova-focus rounded-md p-1 text-ink-300 enabled:hover:bg-ink-700 enabled:hover:text-white disabled:opacity-30"
+                >
+                  <ChevronDown className="size-3.5" />
+                </button>
+                <button
+                  title="Duplicate (⌘D)"
                   onClick={() => selectedId && duplicateNode(selectedId)}
                   className="nova-focus rounded-md p-1 text-ink-300 hover:bg-ink-700 hover:text-white"
                 >
                   <Copy className="size-3.5" />
                 </button>
+                {selNode?.type !== 'instance' && (
+                  <button
+                    title="Save as component (reuse everywhere)"
+                    onClick={() => {
+                      if (!selectedId) return
+                      const name = window.prompt('Name this component (reuse it on any page):', selName || 'Component')
+                      if (name?.trim()) saveAsComponent(selectedId, name.trim())
+                    }}
+                    className="nova-focus rounded-md p-1 text-ink-300 hover:bg-brand-500/20 hover:text-brand-300"
+                  >
+                    <Component className="size-3.5" />
+                  </button>
+                )}
                 <button
                   title="Delete"
                   onClick={() => selectedId && deleteNode(selectedId)}

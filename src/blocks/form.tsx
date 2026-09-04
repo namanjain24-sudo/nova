@@ -9,10 +9,14 @@ registerBlock({
   keywords: ['contact', 'signup', 'fields', 'newsletter'],
   isContainer: true,
   inspector: ['layout', 'spacing', 'size', 'background', 'border', 'effects'],
+  fields: [
+    { key: 'name', label: 'Form name', type: 'text', placeholder: 'Contact form' },
+    { key: 'success', label: 'Success message', type: 'text', placeholder: 'Thanks! We’ll be in touch.' },
+  ],
   create: () =>
     makeNode(
       'form',
-      { action: '', method: 'post' },
+      { name: 'Contact form', success: 'Thanks! We’ll be in touch shortly.', action: '', method: 'post' },
       {
         display: 'flex',
         flexDirection: 'column',
@@ -28,7 +32,7 @@ registerBlock({
         ),
         makeNode(
           'button',
-          { label: 'Subscribe', href: '#' },
+          { label: 'Subscribe', href: '#', submit: true },
           {
             display: 'inline-flex',
             alignItems: 'center',
@@ -49,12 +53,25 @@ registerBlock({
         ),
       ],
     ),
-  render: ({ style, children, editMode }) => (
+  render: ({ node, style, children, editMode }) => (
     <form
       style={style}
+      data-nova-form={editMode ? undefined : ''}
+      data-form-name={node.props.name || 'Contact form'}
+      data-success={node.props.success || 'Thanks! We’ll be in touch shortly.'}
       onSubmit={editMode ? (e) => e.preventDefault() : undefined}
     >
       {children}
+      {!editMode && (
+        <input
+          type="text"
+          name="_gotcha"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+        />
+      )}
     </form>
   ),
 })

@@ -91,3 +91,135 @@
 .animate-pop {
   animation: nova-pop 0.14s ease-out;
 }
+
+/* ---- Scroll-reveal animations + hover effects (preview & export) ---- */
+[data-anim] {
+  opacity: 0;
+  transition:
+    opacity 0.7s ease,
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s ease;
+  will-change: opacity, transform;
+}
+[data-anim='fade-up'] {
+  transform: translateY(26px);
+}
+[data-anim='fade-down'] {
+  transform: translateY(-26px);
+}
+[data-anim='zoom'] {
+  transform: scale(0.92);
+}
+[data-anim='slide-left'] {
+  transform: translateX(42px);
+}
+[data-anim='slide-right'] {
+  transform: translateX(-42px);
+}
+[data-anim='blur-up'] {
+  transform: translateY(22px);
+  filter: blur(14px);
+}
+[data-anim='rotate'] {
+  transform: rotate(-5deg) scale(0.92);
+}
+[data-anim='flip-up'] {
+  transform: perspective(1200px) rotateX(34deg);
+  transform-origin: top center;
+}
+[data-anim].nv-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* ---- Page transition: pages ease in on load / on switch ---- */
+@keyframes nv-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.nova-page-in {
+  animation: nv-page-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-hover] {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    filter 0.22s ease,
+    opacity 0.22s ease;
+}
+[data-hover='lift']:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 44px -18px rgba(15, 23, 42, 0.35);
+}
+[data-hover='grow']:hover {
+  transform: scale(1.035);
+}
+[data-hover='glow']:hover {
+  box-shadow:
+    0 0 0 3px rgba(124, 92, 246, 0.35),
+    0 12px 30px -12px rgba(124, 92, 246, 0.5);
+}
+[data-hover='dim']:hover {
+  opacity: 0.82;
+}
+[data-hover='brighten']:hover {
+  filter: brightness(1.08);
+}
+
+/* ---- FAQ accordion (native <details>) ---- */
+.nv-faq > summary.nv-faq-q {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 0;
+  font-weight: 600;
+}
+.nv-faq > summary.nv-faq-q::-webkit-details-marker {
+  display: none;
+}
+.nv-faq > summary.nv-faq-q::after {
+  content: '+';
+  font-size: 24px;
+  line-height: 1;
+  opacity: 0.45;
+  transition: transform 0.2s ease;
+}
+.nv-faq[open] > summary.nv-faq-q::after {
+  content: '−';
+}
+.nv-faq > .nv-faq-a {
+  padding: 0 0 20px;
+  opacity: 0.72;
+  line-height: 1.6;
+  font-weight: 400;
+  max-width: 60ch;
+}
+
+/* ---- Marquee (infinite scroll strip) ---- */
+@keyframes nv-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*='nv-marquee'] {
+    animation: none !important;
+  }
+  .nova-page-in {
+    animation: none !important;
+  }
+}

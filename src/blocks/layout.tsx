@@ -92,7 +92,12 @@ registerBlock({
         makeNode('container', {}, columnCellStyle(), []),
       ],
     ),
-  render: ({ style, children }) => <div style={style}>{children}</div>,
+  // data-nova-grid lets the exported responsive stylesheet stack columns on mobile
+  render: ({ style, children }) => (
+    <div style={style} data-nova-grid="">
+      {children}
+    </div>
+  ),
 })
 
 function columnCellStyle() {

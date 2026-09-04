@@ -81,6 +81,7 @@ registerBlock({
   fields: [
     { key: 'label', label: 'Label', type: 'text', placeholder: 'Get started' },
     { key: 'href', label: 'Link URL', type: 'url', placeholder: '#' },
+    { key: 'submit', label: 'Submit button', type: 'boolean' },
   ],
   create: () =>
     makeNode(
@@ -106,16 +107,25 @@ registerBlock({
         width: 'fit-content',
       },
     ),
-  render: ({ node, style, editMode }) => (
-    <a
-      href={editMode ? undefined : node.props.href}
-      style={style}
-      onClick={editMode ? (e) => e.preventDefault() : undefined}
-      {...editableText(node, editMode, 'label')}
-    >
-      {node.props.label}
-    </a>
-  ),
+  render: ({ node, style, editMode }) =>
+    node.props.submit ? (
+      <button
+        type={editMode ? 'button' : 'submit'}
+        style={{ border: 'none', font: 'inherit', ...style }}
+        {...editableText(node, editMode, 'label')}
+      >
+        {node.props.label}
+      </button>
+    ) : (
+      <a
+        href={editMode ? undefined : node.props.href}
+        style={style}
+        onClick={editMode ? (e) => e.preventDefault() : undefined}
+        {...editableText(node, editMode, 'label')}
+      >
+        {node.props.label}
+      </a>
+    ),
 })
 
 registerBlock({
@@ -295,7 +305,7 @@ registerBlock({
               style={{
                 flexShrink: 0,
                 marginTop: '2px',
-                color: '#7c3aed',
+                color: node.props.accent ?? '#7c3aed',
                 display: 'inline-flex',
               }}
             >

@@ -1,4 +1,4 @@
-import { CircleUser, Image as ImageIcon, Video } from 'lucide-react'
+import { CircleUser, Hexagon, Image as ImageIcon, Video } from 'lucide-react'
 import { makeNode, registerBlock } from '../core/schema'
 
 registerBlock({
@@ -11,6 +11,7 @@ registerBlock({
   fields: [
     { key: 'src', label: 'Image URL', type: 'image', placeholder: 'https://…' },
     { key: 'alt', label: 'Alt text', type: 'text', placeholder: 'Description' },
+    { key: 'lightbox', label: 'Click to zoom (lightbox)', type: 'boolean' },
   ],
   create: () =>
     makeNode(
@@ -28,9 +29,56 @@ registerBlock({
         objectFit: 'cover',
       },
     ),
-  render: ({ node, style }) => (
-    <img src={node.props.src} alt={node.props.alt ?? ''} style={style} draggable={false} />
-  ),
+  render: ({ node, style, editMode }) => {
+    const lb = !editMode && node.props.lightbox
+    return (
+      <img
+        src={node.props.src}
+        alt={node.props.alt ?? ''}
+        style={lb ? { cursor: 'zoom-in', ...style } : style}
+        draggable={false}
+        {...(lb ? { 'data-nv-lightbox': '' } : {})}
+      />
+    )
+  },
+})
+
+registerBlock({
+  type: 'logo',
+  name: 'Logo',
+  category: 'media',
+  icon: Hexagon,
+  keywords: ['brand', 'mark', 'wordmark', 'company'],
+  inspector: ['size', 'spacing', 'effects'],
+  fields: [
+    { key: 'src', label: 'Logo image', type: 'image', placeholder: 'Upload your logo' },
+    { key: 'alt', label: 'Brand name', type: 'text', placeholder: 'Your brand' },
+  ],
+  create: () =>
+    makeNode(
+      'logo',
+      { src: '', alt: 'Your Brand' },
+      { display: 'block', height: '34px', width: 'auto', objectFit: 'contain' },
+    ),
+  render: ({ node, style }) =>
+    node.props.src ? (
+      <img src={node.props.src} alt={node.props.alt ?? ''} style={style} draggable={false} />
+    ) : (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          fontSize: '22px',
+          fontWeight: 800,
+          letterSpacing: '-0.01em',
+          color: '#0f172a',
+          ...style,
+          height: undefined,
+        }}
+      >
+        {node.props.alt || 'Your Brand'}
+      </span>
+    ),
 })
 
 registerBlock({

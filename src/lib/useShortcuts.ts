@@ -33,12 +33,34 @@ export function useShortcuts() {
       }
 
       if (editing) return
-      const { selectedId, doc, duplicateNode, deleteNode, select } = useEditor.getState()
+      const st = useEditor.getState()
+      const { selectedId, doc, duplicateNode, deleteNode, select } = st
 
       // Duplicate
       if (mod && e.key.toLowerCase() === 'd') {
         e.preventDefault()
         if (selectedId && selectedId !== doc.id) duplicateNode(selectedId)
+        return
+      }
+      // Copy / Cut / Paste blocks (works across pages)
+      if (mod && e.key.toLowerCase() === 'c') {
+        if (selectedId && selectedId !== doc.id) { e.preventDefault(); st.copyNode(selectedId) }
+        return
+      }
+      if (mod && e.key.toLowerCase() === 'x') {
+        if (selectedId && selectedId !== doc.id) { e.preventDefault(); st.cutNode(selectedId) }
+        return
+      }
+      if (mod && e.key.toLowerCase() === 'v') {
+        if (st.clipboard) { e.preventDefault(); st.pasteNode() }
+        return
+      }
+      // Reorder among siblings with Alt + Arrow
+      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        if (selectedId && selectedId !== doc.id) {
+          e.preventDefault()
+          st.moveNodeBy(selectedId, e.key === 'ArrowUp' ? -1 : 1)
+        }
         return
       }
       // Delete

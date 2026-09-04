@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, type ReactNode } from 'react'
 import type { Device, Node } from './schema'
-import { getBlock, resolveStyle } from './schema'
+import { autoResponsive, getBlock, resolveStyle } from './schema'
 import { useEditor } from '../store/editor'
 
 interface NodeViewProps {
@@ -49,8 +49,34 @@ export function NodeView({ node, device, editMode }: NodeViewProps) {
     children = <EmptyHint label={`Empty ${def.name.toLowerCase()} — drop or add blocks here`} />
   }
 
-  const el = def.render({ node, style, children, editMode })
-  if (!editMode || !isValidElement(el)) return el
+  const el = def.render({ node, style, children, editMode, device })
+  if (!isValidElement(el)) return el
+
+  // In preview/export, attach scroll-reveal + hover-effect data attributes and,
+  // for nodes with per-breakpoint styles, a stable class the exported <style> targets.
+  if (!editMode) {
+    const anim = node.props?._anim && node.props._anim !== 'none' ? node.props._anim : null
+    const hover = node.props?._hover && node.props._hover !== 'none' ? node.props._hover : null
+    const r = node.responsive
+    const hasResponsive =
+      !!(r && (r.tablet || r.mobile)) ||
+      !!autoResponsive(node.style, 'tablet') ||
+      !!autoResponsive(node.style, 'mobile')
+    if (!anim && !hover && !hasResponsive) return el
+    const prev = el.props as any
+    const extra: Record<string, any> = {}
+    if (anim) {
+      extra['data-anim'] = anim
+      if (node.props._animDelay) {
+        extra.style = { ...prev.style, transitionDelay: `${node.props._animDelay}ms` }
+      }
+    }
+    if (hover) extra['data-hover'] = hover
+    if (hasResponsive) {
+      extra.className = [prev.className, `nv-${node.id}`].filter(Boolean).join(' ')
+    }
+    return cloneElement(el as any, extra)
+  }
 
   const prev = el.props as any
   return cloneElement(el as any, {
